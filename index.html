@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Startup Calendar</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Inter,Segoe UI;
+}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(135deg,#667eea,#764ba2);
+transition:.4s;
+}
+
+.dark{
+background:#0f172a;
+}
+
+/* LOADER */
+
+.loader{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#0f172a;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+color:white;
+z-index:999;
+}
+
+.spinner{
+width:60px;
+height:60px;
+border:6px solid #334155;
+border-top:6px solid #6366f1;
+border-radius:50%;
+animation:spin 1s linear infinite;
+margin-bottom:10px;
+}
+
+@keyframes spin{
+to{transform:rotate(360deg)}
+}
+
+/* APP */
+
+.app{
+width:430px;
+background:rgba(255,255,255,0.85);
+backdrop-filter:blur(20px);
+border-radius:20px;
+padding:20px;
+box-shadow:0 20px 50px rgba(0,0,0,.3);
+animation:fade .8s;
+}
+
+.dark .app{
+background:rgba(30,41,59,.9);
+color:white;
+}
+
+@keyframes fade{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1}
+}
+
+.title{
+text-align:center;
+font-weight:bold;
+font-size:18px;
+color:#6366f1;
+}
+
+.subtitle{
+text-align:center;
+font-size:12px;
+margin-bottom:10px;
+opacity:.8;
+}
+
+/* HEADER */
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+
+.header button{
+border:none;
+background:#6366f1;
+color:white;
+padding:6px 12px;
+border-radius:8px;
+cursor:pointer;
+transition:.2s;
+}
+
+.header button:hover{
+transform:scale(1.1);
+}
+
+#monthYear{
+font-weight:bold;
+font-size:18px;
+}
+
+/* SEARCH */
+
+.search{
+width:100%;
+padding:8px;
+border-radius:8px;
+border:1px solid #ddd;
+margin:10px 0;
+}
+
+/* WEEK */
+
+.weekdays{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+text-align:center;
+font-size:13px;
+font-weight:bold;
+margin-bottom:5px;
+}
+
+/* DAYS */
+
+.days{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:6px;
+}
+
+.day{
+padding:10px;
+text-align:center;
+border-radius:10px;
+cursor:pointer;
+transition:.2s;
+position:relative;
+}
+
+.day:hover{
+background:#6366f1;
+color:white;
+transform:scale(1.1);
+}
+
+.today{
+background:#ef4444;
+color:white;
+}
+
+/* DOT EVENT */
+
+.dot{
+width:6px;
+height:6px;
+border-radius:50%;
+position:absolute;
+bottom:4px;
+left:50%;
+transform:translateX(-50%);
+}
+
+/* EVENT LIST */
+
+.eventList{
+margin-top:10px;
+max-height:100px;
+overflow:auto;
+font-size:13px;
+}
+
+.eventItem{
+padding:4px;
+border-bottom:1px solid #ddd;
+}
+
+/* POPUP */
+
+.popup{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.5);
+display:flex;
+justify-content:center;
+align-items:center;
+opacity:0;
+pointer-events:none;
+transition:.3s;
+}
+
+.popup.active{
+opacity:1;
+pointer-events:auto;
+}
+
+.popup-box{
+background:white;
+padding:20px;
+border-radius:15px;
+width:280px;
+animation:pop .3s;
+}
+
+.dark .popup-box{
+background:#1e293b;
+color:white;
+}
+
+@keyframes pop{
+from{transform:scale(.6)}
+to{transform:scale(1)}
+}
+
+.popup input,
+.popup select{
+width:100%;
+padding:7px;
+margin-top:8px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+.popup button{
+margin-top:10px;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+background:#6366f1;
+color:white;
+}
+
+.toggle{
+margin-top:10px;
+text-align:center;
+}
+
+.footer{
+margin-top:15px;
+font-size:12px;
+text-align:center;
+opacity:.7;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+
+<div class="loader" id="loader">
+<div class="spinner"></div>
+<h2>Loading Calendar...</h2>
+</div>
+
+<div class="app">
+
+<div class="title">Kalender Sederhana
+</div>
+
+<div class="subtitle">
+Tugas Mapel: Pemasangan dan Konfigurasi Perangkat Jaringan
+</div>
+
+<div class="header">
+<button id="prev">❮</button>
+<div id="monthYear"></div>
+<button id="next">❯</button>
+</div>
+
+<input class="search" placeholder="🔍 Cari event..." id="search">
+
+<div class="weekdays">
+<div>Sun</div><div>Mon</div><div>Tue</div>
+<div>Wed</div><div>Thu</div><div>Fri</div>
+<div>Sat</div>
+</div>
+
+<div class="days" id="days"></div>
+
+<div class="eventList" id="eventList"></div>
+
+<div class="toggle">
+<button onclick="toggleMode()">🌙 Dark Mode</button>
+</div>
+
+<div class="footer">
+© 2026 Copyright by Developer <b>Muhamad Olip & Rudy Yanto</b>
+</div>
+
+</div>
+
+<!-- POPUP -->
+
+<div class="popup" id="popup">
+
+<div class="popup-box">
+
+<h3 id="selectedDate"></h3>
+
+<input id="eventInput" placeholder="Nama Event">
+
+<select id="color">
+<option value="#22c55e">Hijau</option>
+<option value="#ef4444">Merah</option>
+<option value="#3b82f6">Biru</option>
+<option value="#f59e0b">Kuning</option>
+</select>
+
+<button onclick="saveEvent()">Simpan</button>
+<button onclick="closePopup()">Tutup</button>
+
+</div>
+
+</div>
+
+<script>
+
+let date = new Date()
+
+const monthYear = document.getElementById("monthYear")
+const daysContainer = document.getElementById("days")
+
+let events = JSON.parse(localStorage.getItem("events") || "{}")
+
+let selectedKey=""
+
+/* RENDER CALENDAR */
+
+function renderCalendar(){
+
+const year=date.getFullYear()
+const month=date.getMonth()
+
+const firstDay=new Date(year,month,1).getDay()
+const lastDate=new Date(year,month+1,0).getDate()
+
+monthYear.innerText=
+date.toLocaleString("id",{month:"long",year:"numeric"})
+
+daysContainer.innerHTML=""
+
+for(let i=0;i<firstDay;i++){
+daysContainer.appendChild(document.createElement("div"))
+}
+
+for(let d=1; d<=lastDate; d++){
+
+const day=document.createElement("div")
+day.classList.add("day")
+day.innerText=d
+
+let today=new Date()
+
+if(
+d===today.getDate() &&
+month===today.getMonth() &&
+year===today.getFullYear()
+){
+day.classList.add("today")
+}
+
+let key=`${year}-${month+1}-${d}`
+
+if(events[key]){
+
+let dot=document.createElement("div")
+dot.classList.add("dot")
+dot.style.background=events[key].color
+day.appendChild(dot)
+
+}
+
+day.onclick=()=>{
+openPopup(d,month+1,year)
+}
+
+daysContainer.appendChild(day)
+
+}
+
+renderEventList()
+
+}
+
+/* POPUP */
+
+function openPopup(d,m,y){
+
+selectedKey=`${y}-${m}-${d}`
+
+document.getElementById("selectedDate").innerText=
+`${d}/${m}/${y}`
+
+document.getElementById("popup").classList.add("active")
+
+}
+
+function closePopup(){
+document.getElementById("popup").classList.remove("active")
+}
+
+/* SAVE EVENT */
+
+function saveEvent(){
+
+const name=document.getElementById("eventInput").value
+const color=document.getElementById("color").value
+
+if(events[selectedKey] && events[selectedKey].holiday){
+alert("Tanggal ini adalah hari libur nasional")
+return
+}
+
+events[selectedKey]={name,color}
+
+localStorage.setItem("events",JSON.stringify(events))
+
+closePopup()
+renderCalendar()
+
+}
+
+/* EVENT LIST */
+
+function renderEventList(){
+
+const list=document.getElementById("eventList")
+list.innerHTML=""
+
+Object.keys(events).forEach(key=>{
+
+const div=document.createElement("div")
+div.classList.add("eventItem")
+
+div.innerText=`${key} - ${events[key].name}`
+
+list.appendChild(div)
+
+})
+
+}
+
+/* NAVIGATION */
+
+document.getElementById("prev").onclick=()=>{
+date.setMonth(date.getMonth()-1)
+renderCalendar()
+}
+
+document.getElementById("next").onclick=()=>{
+date.setMonth(date.getMonth()+1)
+renderCalendar()
+}
+
+/* DARK MODE */
+
+function toggleMode(){
+document.body.classList.toggle("dark")
+}
+
+/* SEARCH */
+
+document.getElementById("search").oninput=function(){
+
+const value=this.value.toLowerCase()
+
+const list=document.getElementById("eventList")
+const items=list.querySelectorAll(".eventItem")
+
+items.forEach(i=>{
+i.style.display=i.innerText.toLowerCase().includes(value)?"block":"none"
+})
+
+}
+
+/* API HARI LIBUR */
+
+function loadHolidays(){
+
+const year=date.getFullYear()
+
+fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/ID`)
+.then(res=>res.json())
+.then(data=>{
+
+data.forEach(libur=>{
+
+let t=new Date(libur.date)
+
+let key=`${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`
+
+if(!events[key]){
+
+events[key]={
+name:libur.localName,
+color:"#ef4444",
+holiday:true
+}
+
+}
+
+})
+
+localStorage.setItem("events",JSON.stringify(events))
+renderCalendar()
+
+})
+
+}
+
+/* INIT */
+
+renderCalendar()
+loadHolidays()
+
+window.onload=function(){
+
+setTimeout(()=>{
+document.getElementById("loader").style.display="none"
+},1200)
+
+}
+
+</script>
+
+</body>
+</html>
